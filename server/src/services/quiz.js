@@ -154,7 +154,8 @@ export async function startAttempt(userId, competitionId) {
 
 async function loadAttempt(userId, competitionId) {
   const attempt = await one(
-    `SELECT a.*, c.title, c.max_tab_switches, c.negative_mark, c.show_result_immediately, c.results_published, c.end_time
+    `SELECT a.*, c.title, c.max_tab_switches, c.negative_mark, c.show_result_immediately, c.results_published, c.end_time,
+            c.show_answer_review
        FROM attempts a JOIN competitions c ON c.id = a.competition_id
       WHERE a.competition_id = $1 AND a.user_id = $2`,
     [competitionId, userId],
@@ -279,7 +280,11 @@ export async function submitAttempt(userId, competitionId) {
   return { submitted: true };
 }
 
-/** Result for the student. Score is shown per competition settings; answer review only after results are published. */
+/**
+ * Result for the student. The score follows the competition's settings and the rank appears once results are
+ * published. Right/wrong counts and the answer review are only sent when the competition allows it
+ * (show_answer_review), and the review additionally waits for published results.
+ */
 export async function getResult(userId, competitionId) {
   let attempt = await loadAttempt(userId, competitionId);
   if (!(await finalizeIfExpired(attempt))) throw badRequest('Your quiz is still in progress');
@@ -302,11 +307,14 @@ export async function getResult(userId, competitionId) {
   const result = {
     ...base,
     scoreVisible: true,
+    answersVisible: attempt.show_answer_review,
     score: attempt.score,
     maxScore: attempt.max_score,
-    correct: attempt.correct_count,
-    wrong: attempt.wrong_count,
-    unanswered: attempt.unanswered_count,
+    ...(attempt.show_answer_review && {
+      correct: attempt.correct_count,
+      wrong: attempt.wrong_count,
+      unanswered: attempt.unanswered_count,
+    }),
   };
   if (!attempt.results_published) return result;
 
@@ -321,6 +329,8 @@ export async function getResult(userId, competitionId) {
       GROUP BY me.id, me.competition_id`,
     [attempt.id],
   );
+  const ranked = { ...result, rank: rank.rank, participants: rank.participants };
+  if (!attempt.show_answer_review) return ranked;
 
   const order = attempt.question_order;
   const [questions, answers] = await Promise.all([
@@ -333,9 +343,7 @@ export async function getResult(userId, competitionId) {
   const answerById = new Map(answers.map((a) => [a.question_id, a.selected_option]));
 
   return {
-    ...result,
-    rank: rank.rank,
-    participants: rank.participants,
+    ...ranked,
     review: order
       .filter((o) => byId.has(o.q))
       .map((o, i) => {

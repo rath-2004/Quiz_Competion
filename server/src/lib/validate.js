@@ -71,6 +71,7 @@ export const competitionSchema = z
     status: z.enum(['draft', 'published']).default('draft'),
     registration_open: z.boolean().default(true),
     show_result_immediately: z.boolean().default(false),
+    show_answer_review: z.boolean().default(false),
   })
   .refine((c) => c.end_time > c.start_time, { message: 'End time must be after start time', path: ['end_time'] });
 

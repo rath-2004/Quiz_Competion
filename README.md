@@ -12,7 +12,7 @@ An online quiz platform for inter-college competitions, built and load-tested fo
 | Timed quiz with server-side timer, question palette, mark-for-review, keyboard shortcuts | Competitions: schedule window + duration, random subset per student, shuffling, negative marking, tab-switch limit |
 | Every answer saved instantly; refresh or reconnect and resume where you left off | Assign questions from the bank, at random by category/difficulty, or by CSV |
 | Auto-submit when time runs out | Participants: live status, scores, tab switches; reset an attempt; bulk-register students |
-| Score, rank and answer review with explanations once results are published | Leaderboard (overall + by college), results CSV export, publish/unpublish results, re-score, force submit |
+| Score and rank once results are published (right/wrong answers stay hidden unless the organiser enables the answer review) | Leaderboard (overall + by college), results CSV export, publish/unpublish results, re-score, force submit |
 | Profile and password management | Students: search/filter 5k+ records, view history, edit, block, reset password, CSV import/export |
 
 **Stack:** Node.js (Express 5) · PostgreSQL · React 19 (Vite). No other services needed.
@@ -93,7 +93,7 @@ Run it under systemd/PM2 with `LimitNOFILE=65535` (each connected student holds 
 3. **Assign questions** — on the competition's *Questions* tab: pick from the bank, add random questions by category/difficulty (e.g. 10 easy + 10 medium + 5 hard), or import a CSV straight into the competition. If *questions per student* is smaller than the pool, each student gets a different random subset.
 4. **Publish** — students now see it and can register. You can also bulk-register (all students or one college) from *Overview → Controls*, or while importing students from CSV.
 5. **On the day** — ask students to **log in 15–30 minutes before the start**. Watch *Participants* (refreshes every 10 s) and the admin dashboard. If a student has a genuine technical problem, *Reset* their attempt so they can start again.
-6. **After it closes** — any unfinished attempts are auto-submitted within a minute. Check the *Leaderboard*, fix any wrong answer key in the bank and click *Re-score* if needed, then **Publish results** so students see their rank and the answer review. *Results CSV* exports the full ranked list.
+6. **After it closes** — any unfinished attempts are auto-submitted within a minute. Check the *Leaderboard*, fix any wrong answer key in the bank and click *Re-score* if needed, then **Publish results** so students see their rank. Students never see which answers were right or wrong unless you tick *Show students which answers were right or wrong* in the competition settings. *Results CSV* exports the full ranked list.
 
 **Timing rules:** a student's deadline is `start + duration`, but never later than the competition's closing time. Late joiners get less time. For a fixed-time event, make the window only slightly longer than the duration (e.g. 30 min quiz, 40 min window).
 

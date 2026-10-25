@@ -47,6 +47,7 @@ router.get('/:id', async (req, res) => {
 const COLUMNS = [
   'title', 'description', 'rules', 'start_time', 'end_time', 'duration_minutes', 'question_count', 'shuffle_questions',
   'shuffle_options', 'negative_mark', 'max_tab_switches', 'status', 'registration_open', 'show_result_immediately',
+  'show_answer_review',
 ];
 
 router.post('/', async (req, res) => {

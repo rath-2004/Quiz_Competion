@@ -43,13 +43,23 @@ export default function Result() {
                 <div className="muted small">out of {formatScore(r.maxScore)}</div>
               </div>
             </div>
-            <div className="stats-row">
-              <StatCard label="Correct" value={r.correct} tone="green" />
-              <StatCard label="Wrong" value={r.wrong} tone="red" />
-              <StatCard label="Unanswered" value={r.unanswered} />
-              {r.rank && <StatCard label="Rank" value={`#${r.rank}`} hint={`of ${r.participants}`} tone="indigo" />}
-            </div>
-            {!r.resultsPublished && <p className="muted small">Rank and answer review appear after the organisers publish results.</p>}
+            {(r.answersVisible || r.rank) && (
+              <div className="stats-row stats-row-center">
+                {r.answersVisible && (
+                  <>
+                    <StatCard label="Correct" value={r.correct} tone="green" />
+                    <StatCard label="Wrong" value={r.wrong} tone="red" />
+                    <StatCard label="Unanswered" value={r.unanswered} />
+                  </>
+                )}
+                {r.rank && <StatCard label="Rank" value={`#${r.rank}`} hint={`of ${r.participants}`} tone="indigo" />}
+              </div>
+            )}
+            {!r.resultsPublished && (
+              <p className="muted small">
+                {r.answersVisible ? 'Rank and answer review appear' : 'Your rank appears'} after the organisers publish results.
+              </p>
+            )}
           </>
         )}
       </div>
