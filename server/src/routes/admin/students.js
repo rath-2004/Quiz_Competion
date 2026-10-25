@@ -4,6 +4,7 @@ import { parseCsv, sendCsv, toCsv } from '../../lib/csv.js';
 import { badRequest, notFound } from '../../lib/errors.js';
 import { hashPassword } from '../../lib/password.js';
 import { paginationSchema, password, registerSchema, studentProfileSchema, validate, z } from '../../lib/validate.js';
+import { forgetUser } from '../../middleware/auth.js';
 import { PUBLIC_USER_FIELDS, publicUser, uniqueViolation } from '../auth.js';
 
 const router = Router();
@@ -118,6 +119,7 @@ router.put('/:id', async (req, res) => {
       [data.name, data.email, data.phone, data.college, data.department, data.year_of_study ?? null, data.roll_number, id],
     );
     if (!student) throw notFound('Student not found');
+    forgetUser(id);
     res.json({ student: publicUser(student) });
   } catch (err) {
     throw uniqueViolation(err) ?? err;
@@ -133,6 +135,7 @@ router.patch('/:id/status', async (req, res) => {
     [is_active, idParam(req)],
   );
   if (!student) throw notFound('Student not found');
+  forgetUser(student.id);
   res.json({ student: publicUser(student) });
 });
 
@@ -144,12 +147,15 @@ router.post('/:id/reset-password', async (req, res) => {
     [await hashPassword(newPassword), idParam(req)],
   );
   if (!student) throw notFound('Student not found');
+  forgetUser(student.id);
   res.json({ reset: true });
 });
 
 router.delete('/:id', async (req, res) => {
-  const { rowCount } = await query("DELETE FROM users WHERE id = $1 AND role = 'student'", [idParam(req)]);
+  const id = idParam(req);
+  const { rowCount } = await query("DELETE FROM users WHERE id = $1 AND role = 'student'", [id]);
   if (!rowCount) throw notFound('Student not found');
+  forgetUser(id);
   res.json({ deleted: true });
 });
 

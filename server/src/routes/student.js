@@ -12,7 +12,7 @@ const idParam = (req) => validate(z.coerce.number().int().positive(), req.params
 
 const LIST_FIELDS = `c.id, c.title, c.description, c.start_time, c.end_time, c.duration_minutes, c.registration_open,
   c.negative_mark, c.show_result_immediately, c.results_published, c.max_tab_switches,
-  COALESCE(c.question_count, (SELECT COUNT(*) FROM competition_questions cq WHERE cq.competition_id = c.id)) AS question_count`;
+  (SELECT LEAST(COALESCE(c.question_count, COUNT(*)), COUNT(*)) FROM competition_questions cq WHERE cq.competition_id = c.id) AS question_count`;
 
 /** Published competitions with this student's registration / attempt status. */
 router.get('/competitions', async (req, res) => {
@@ -60,8 +60,8 @@ router.get('/competitions/:id/attempt', async (req, res) => {
 });
 
 const answerSchema = z.object({
-  questionId: z.number().int().positive(),
-  selected: z.number().int().min(0).nullable(),
+  questionId: z.number().int().positive().max(2147483647),
+  selected: z.number().int().min(0).max(5).nullable(),
   markedReview: z.boolean().default(false),
 });
 

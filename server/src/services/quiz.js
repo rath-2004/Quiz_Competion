@@ -222,27 +222,36 @@ export async function getAttemptState(userId, competitionId) {
 
 async function loadOpenAttempt(userId, competitionId) {
   const attempt = await loadAttempt(userId, competitionId);
+  if (attempt.status === 'submitted') throw conflict('Your quiz has already been submitted');
   if (await finalizeIfExpired(attempt)) throw conflict('Time is up — your quiz has been submitted');
   return attempt;
 }
 
 /** Saves (or clears) the answer for one question. */
 export async function saveAnswer(userId, competitionId, { questionId, selected, markedReview }) {
+  // This is the hottest endpoint during a quiz, so the normal case is one statement: it only writes when the
+  // attempt is open, within its deadline, and the question / option belong to this student's quiz.
+  const { rowCount } = await pool.query(
+    `INSERT INTO attempt_answers (attempt_id, question_id, selected_option, marked_review, answered_at)
+     SELECT a.id, $3::int, $4::int, $5::boolean, now()
+       FROM attempts a
+      WHERE a.competition_id = $1 AND a.user_id = $2 AND a.status = 'in_progress'
+        AND now() <= a.deadline + make_interval(secs => $6)
+        AND EXISTS (
+          SELECT 1 FROM jsonb_array_elements(a.question_order) e
+           WHERE (e->>'q')::int = $3::int AND ($4::int IS NULL OR e->'o' @> to_jsonb($4::int)))
+     ON CONFLICT (attempt_id, question_id)
+     DO UPDATE SET selected_option = EXCLUDED.selected_option, marked_review = EXCLUDED.marked_review, answered_at = now()`,
+    [competitionId, userId, questionId, selected, markedReview, config.submitGraceSeconds],
+  );
+  if (rowCount) return { saved: true };
+
+  // Nothing was written: find out why to give the student a useful error.
   const attempt = await loadOpenAttempt(userId, competitionId);
   const entry = attempt.question_order.find((o) => o.q === questionId);
   if (!entry) throw badRequest('This question is not part of your quiz');
   if (selected !== null && !entry.o.includes(selected)) throw badRequest('Invalid option');
-
-  const { rowCount } = await pool.query(
-    `INSERT INTO attempt_answers (attempt_id, question_id, selected_option, marked_review, answered_at)
-     SELECT $1, $2, $3, $4, now()
-       FROM attempts WHERE id = $1 AND status = 'in_progress'
-     ON CONFLICT (attempt_id, question_id)
-     DO UPDATE SET selected_option = EXCLUDED.selected_option, marked_review = EXCLUDED.marked_review, answered_at = now()`,
-    [attempt.id, questionId, selected, markedReview],
-  );
-  if (rowCount === 0) throw conflict('Your quiz has already been submitted');
-  return { saved: true };
+  throw conflict('Your quiz has already been submitted');
 }
 
 /** Records a tab switch / window blur. Auto-submits when the competition's limit is exceeded. */

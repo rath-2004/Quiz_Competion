@@ -16,7 +16,7 @@ export function setAuthCookie(res, token) {
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: config.isProduction,
+    secure: config.https,
     expires: new Date(exp * 1000),
     path: '/',
   });
@@ -32,6 +32,24 @@ function readToken(req) {
   return req.cookies?.[COOKIE_NAME];
 }
 
+// During a quiz every student saves an answer every few seconds, so the user row is cached briefly per process.
+// Changes made through this process apply at once (forgetUser); other cluster workers see them within USER_CACHE_MS.
+const USER_CACHE_MS = 5000;
+const userCache = new Map();
+
+export function forgetUser(id) {
+  userCache.delete(Number(id));
+}
+
+async function loadUser(id) {
+  const hit = userCache.get(id);
+  if (hit && hit.expires > Date.now()) return hit.user;
+  const user = await one('SELECT id, role, name, email, is_active, token_version FROM users WHERE id = $1', [id]);
+  if (userCache.size > 50_000) userCache.clear();
+  userCache.set(id, { user, expires: Date.now() + USER_CACHE_MS });
+  return user;
+}
+
 /** Loads the logged-in user into req.user. Blocked users and revoked tokens are rejected. */
 export async function authenticate(req, _res, next) {
   const token = readToken(req);
@@ -42,10 +60,7 @@ export async function authenticate(req, _res, next) {
   } catch {
     throw unauthorized('Your session has expired. Please log in again.');
   }
-  const user = await one(
-    'SELECT id, role, name, email, is_active, token_version FROM users WHERE id = $1',
-    [Number(payload.sub)],
-  );
+  const user = await loadUser(Number(payload.sub));
   if (!user || user.token_version !== payload.tv) throw unauthorized('Your session has expired. Please log in again.');
   if (!user.is_active) throw forbidden('Your account has been disabled. Contact the organisers.');
   req.user = user;

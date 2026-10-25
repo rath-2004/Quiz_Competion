@@ -5,7 +5,7 @@ import { one } from '../db.js';
 import { badRequest, conflict, unauthorized } from '../lib/errors.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { loginSchema, password, registerSchema, studentProfileSchema, validate, z } from '../lib/validate.js';
-import { authenticate, clearAuthCookie, setAuthCookie, signToken } from '../middleware/auth.js';
+import { authenticate, clearAuthCookie, forgetUser, setAuthCookie, signToken } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -102,6 +102,7 @@ router.put('/me', authenticate, async (req, res) => {
   } catch (err) {
     throw uniqueViolation(err) ?? err;
   }
+  forgetUser(req.user.id);
   res.json({ user: publicUser(user) });
 });
 
@@ -115,6 +116,7 @@ router.post('/change-password', authenticate, async (req, res) => {
     [await hashPassword(data.newPassword), req.user.id],
   );
   // Other sessions are signed out; this one gets a fresh token.
+  forgetUser(req.user.id);
   const token = signToken(user);
   setAuthCookie(res, token);
   res.json({ ok: true, token });

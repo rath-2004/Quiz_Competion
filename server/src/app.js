@@ -24,8 +24,10 @@ export function createApp() {
         directives: {
           // Question images may be hosted anywhere.
           'img-src': ["'self'", 'data:', 'https:', 'http:'],
+          'upgrade-insecure-requests': config.https ? [] : null,
         },
       },
+      strictTransportSecurity: config.https,
     }),
   );
   app.use(compression());
