@@ -1,0 +1,45 @@
+# Production-style stack: PostgreSQL + the quiz app.
+#   1. cp .env.example .env   and set JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, POSTGRES_PASSWORD
+#   2. docker compose up -d --build
+#   3. open http://<server-ip>:4000
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: quiz
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quiz}
+      POSTGRES_DB: quiz_competition
+    command: postgres -c max_connections=200 -c shared_buffers=256MB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U quiz -d quiz_competition']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://quiz:${POSTGRES_PASSWORD:-quiz}@db:5432/quiz_competition
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (e.g. openssl rand -hex 32)}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrator}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      # One process per CPU core. Keep WEB_CONCURRENCY x DB_POOL_SIZE below max_connections (200 above).
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-4}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      # true when users reach the site over https:// (e.g. behind nginx/Caddy with a certificate).
+      HTTPS: ${HTTPS:-false}
+      TRUST_PROXY: ${TRUST_PROXY:-}
+    ports:
+      - '${PORT:-4000}:4000'
+
+volumes:
+  pgdata:
