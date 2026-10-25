@@ -1,0 +1,42 @@
+# Production-style stack: PostgreSQL + the quiz app.
+#   cp .env.example .env    # then edit the values
+#   docker compose up -d --build
+# The app is then available on http://<server>:${PORT:-4000}
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: quiz
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quiz}
+      POSTGRES_DB: quiz
+    command: postgres -c max_connections=200 -c shared_buffers=256MB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U quiz -d quiz']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://quiz:${POSTGRES_PASSWORD:-quiz}@db:5432/quiz
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrator}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      DB_POOL_MAX: ${DB_POOL_MAX:-20}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+    ports:
+      - '${PORT:-4000}:4000'
+
+volumes:
+  pgdata:
