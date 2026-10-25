@@ -598,6 +598,10 @@ textarea {
   gap: 1rem;
   width: 100%;
 }
+.stats-row-center {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 200px));
+  justify-content: center;
+}
 .stat {
   background: var(--surface);
   border: 1px solid var(--border);

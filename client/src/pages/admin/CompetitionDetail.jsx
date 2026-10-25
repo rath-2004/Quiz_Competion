@@ -164,6 +164,8 @@ export default function AdminCompetitionDetail() {
                 <dd>{c.max_tab_switches ?? 'Unlimited (recorded)'}</dd>
                 <dt>Score after submit</dt>
                 <dd>{c.show_result_immediately ? 'Shown immediately' : 'Hidden until results are published'}</dd>
+                <dt>Right / wrong answers</dt>
+                <dd>{c.show_answer_review ? 'Shown to students after results are published' : 'Never shown to students'}</dd>
                 <dt>Registration</dt>
                 <dd>{c.registration_open ? 'Open' : 'Closed'}</dd>
               </dl>
@@ -227,7 +229,8 @@ export default function AdminCompetitionDetail() {
 
 function pickSettings(c) {
   const keys = ['title', 'description', 'rules', 'start_time', 'end_time', 'duration_minutes', 'question_count', 'shuffle_questions',
-    'shuffle_options', 'negative_mark', 'max_tab_switches', 'status', 'registration_open', 'show_result_immediately'];
+    'shuffle_options', 'negative_mark', 'max_tab_switches', 'status', 'registration_open', 'show_result_immediately',
+    'show_answer_review'];
   return Object.fromEntries(keys.map((k) => [k, c[k]]));
 }
 

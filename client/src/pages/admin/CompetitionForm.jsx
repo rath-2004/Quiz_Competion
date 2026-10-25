@@ -22,6 +22,7 @@ function defaults() {
     status: 'draft',
     registration_open: true,
     show_result_immediately: false,
+    show_answer_review: false,
   };
 }
 
@@ -74,6 +75,7 @@ export default function AdminCompetitionForm() {
       status: form.status,
       registration_open: form.registration_open,
       show_result_immediately: form.show_result_immediately,
+      show_answer_review: form.show_answer_review,
     };
     try {
       const d = id
@@ -169,7 +171,14 @@ export default function AdminCompetitionForm() {
         </label>
         <label className="check">
           <input type="checkbox" checked={form.show_result_immediately} onChange={set('show_result_immediately')} />
-          <span>Show each student their score right after they submit (rank and answers stay hidden until you publish results)</span>
+          <span>Show each student their score right after they submit (rank stays hidden until you publish results)</span>
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={form.show_answer_review} onChange={set('show_answer_review')} />
+          <span>
+            Show students which answers were right or wrong, with the correct answers and explanations, once you publish
+            results. Leave off to show only their score and rank.
+          </span>
         </label>
       </section>
 

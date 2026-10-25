@@ -148,17 +148,30 @@ describe('full quiz flow', () => {
     const result = await alice.agent.get(`/api/student/competitions/${comp.id}/result`).expect(200);
     assert.equal(result.body.score, 3 * 2 - 0.5);
     assert.equal(result.body.maxScore, 8);
-    assert.equal(result.body.correct, 3);
-    assert.equal(result.body.wrong, 1);
-    assert.equal(result.body.unanswered, 0);
     assert.equal(result.body.rank, 1);
     assert.equal(result.body.participants, 2);
-    assert.equal(result.body.review.length, 4);
+    // By default students never learn which answers were right or wrong.
+    assert.equal(result.body.answersVisible, false);
+    for (const key of ['correct', 'wrong', 'unanswered', 'review']) assert.equal(result.body[key], undefined, key);
+    assert.ok(!JSON.stringify(result.body).includes('correctOption'));
 
     const bobResult = await bob.agent.get(`/api/student/competitions/${comp.id}/result`).expect(200);
     assert.equal(bobResult.body.score, 2);
-    assert.equal(bobResult.body.unanswered, 3);
     assert.equal(bobResult.body.rank, 2);
+
+    // The admin can opt in to showing the answer review.
+    await admin
+      .put(`/api/admin/competitions/${comp.id}`)
+      .send({ title: comp.title, start_time: comp.start_time, end_time: comp.end_time, duration_minutes: 15, status: 'published', negative_mark: 0.5, show_answer_review: true })
+      .expect(200);
+    const reviewed = await alice.agent.get(`/api/student/competitions/${comp.id}/result`).expect(200);
+    assert.equal(reviewed.body.answersVisible, true);
+    assert.equal(reviewed.body.correct, 3);
+    assert.equal(reviewed.body.wrong, 1);
+    assert.equal(reviewed.body.unanswered, 0);
+    assert.equal(reviewed.body.review.length, 4);
+    const bobReviewed = await bob.agent.get(`/api/student/competitions/${comp.id}/result`).expect(200);
+    assert.equal(bobReviewed.body.unanswered, 3);
 
     const board = await admin.get(`/api/admin/competitions/${comp.id}/leaderboard`).expect(200);
     assert.deepEqual(board.body.leaderboard.map((r) => r.user_id), [alice.user.id, bob.user.id]);

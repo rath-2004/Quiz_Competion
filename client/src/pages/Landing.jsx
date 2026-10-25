@@ -4,7 +4,7 @@ const FEATURES = [
   ['Register once', 'Create your student account with your college and roll number, then sign up for any competition.'],
   ['Timed & fair', 'A server-controlled timer, shuffled questions and options, and automatic submission when time runs out.'],
   ['Never lose an answer', 'Every answer is saved the moment you pick it. Reconnect or refresh and continue where you left off.'],
-  ['Results & rankings', 'See your score, rank and the correct answers as soon as the organisers publish results.'],
+  ['Results & rankings', 'See your score and rank across all colleges as soon as the organisers publish results.'],
 ];
 
 export default function Landing() {
