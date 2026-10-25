@@ -46,6 +46,17 @@ Open http://localhost:5173
 | Admin | `admin@quiz.local` | `Admin@123` |
 | Student | `aarav@student.demo` (also `priya@`, `rahul@`) | `Student@123` |
 
+## Deploy to the cloud (Render)
+
+`render.yaml` sets up the app and its PostgreSQL database on [Render](https://render.com) in a few clicks:
+
+1. Sign up at render.com with your GitHub account.
+2. **New → Blueprint**, choose this repository and the branch with the code, click **Apply**.
+3. Enter an **ADMIN_EMAIL** and **ADMIN_PASSWORD** when asked (your organiser login).
+4. Wait ~5 minutes for the first build. Your site is at `https://quiz-competition-xxxx.onrender.com`.
+
+It starts on Render's **free** plans with demo data (`SEED_DEMO=true`): good for trying it out, but the free web service sleeps after 15 idle minutes (the next visit takes ~1 minute to wake it) and the free database expires after 30 days. **For the real event**, in the Render dashboard: move the web service to a paid instance with 2–4 CPUs and set `WEB_CONCURRENCY` to the CPU count, move the database to a paid plan, set `SEED_DEMO=false`, and delete the demo competition.
+
 ## Production with Docker Compose
 
 ```bash

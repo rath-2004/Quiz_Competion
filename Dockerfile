@@ -21,4 +21,4 @@ COPY --from=build /app/client/dist client/dist
 USER node
 EXPOSE 4000
 # Applies pending migrations (and creates the admin from ADMIN_* env vars) before starting.
-CMD ["sh", "-c", "node server/scripts/migrate.js && exec node server/src/index.js"]
+CMD ["sh", "server/scripts/docker-start.sh"]
